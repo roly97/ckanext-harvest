@@ -270,9 +270,12 @@ class HarvesterBase(SingletonPlugin):
         use the output of package_show logic function (maybe keeping support
         for rest api based dicts
         '''
+        
+        # Not sure if we have rest or package_show form
         assert package_dict_form in ('rest', 'package_show')
         try:
             # Change default schema
+            # CKAN function to make a CKAN package
             schema = default_create_package_schema()
             schema['id'] = [ignore_missing, unicode]
             schema['__junk'] = [ignore]
@@ -295,7 +298,8 @@ class HarvesterBase(SingletonPlugin):
                 'schema': schema,
                 'ignore_auth': True,
             }
-
+            
+            # Make tags if necessary (don't think this is an issue)
             if self.config and self.config.get('clean_tags', False):
                 tags = package_dict.get('tags', [])
                 package_dict['tags'] = self._clean_tags(tags)
@@ -307,7 +311,8 @@ class HarvesterBase(SingletonPlugin):
 
                 # In case name has been modified when first importing. See issue #101.
                 package_dict['name'] = existing_package_dict['name']
-
+                
+                # We don't use this just yet
                 # Check modified date
                 if 'metadata_modified' not in package_dict or \
                    package_dict['metadata_modified'] > existing_package_dict.get('metadata_modified'):
@@ -325,7 +330,7 @@ class HarvesterBase(SingletonPlugin):
                     log.info('No changes to package with GUID %s, skipping...' % harvest_object.guid)
                     # NB harvest_object.current/package_id are not set
                     return 'unchanged'
-
+                
                 # Flag the other objects linking to this package as not current anymore
                 from ckanext.harvest.model import harvest_object_table
                 conn = Session.connection()
@@ -339,7 +344,8 @@ class HarvesterBase(SingletonPlugin):
                 harvest_object.package_id = new_package['id']
                 harvest_object.current = True
                 harvest_object.save()
-
+            
+            # Here we are
             except p.toolkit.ObjectNotFound:
                 # Package needs to be created
 
@@ -363,7 +369,9 @@ class HarvesterBase(SingletonPlugin):
 
                 model.Session.execute('SET CONSTRAINTS harvest_object_package_id_fkey DEFERRED')
                 model.Session.flush()
-
+                
+                # Not sure why this refers to package_create_rest() as it doesn't exist anymore
+                # Let's look at what it does anyway
                 new_package = p.toolkit.get_action(
                     'package_create' if package_dict_form == 'package_show'
                     else 'package_create_rest')(context, package_dict)
